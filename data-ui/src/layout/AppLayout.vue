@@ -57,11 +57,13 @@
 
       <!-- 主内容区 -->
       <main class="app-main">
-        <router-view v-slot="{ Component }">
-          <keep-alive :max="15">
-            <component :is="Component" />
-          </keep-alive>
-        </router-view>
+        <ErrorBoundary @reset="pageKey++">
+          <router-view v-slot="{ Component }">
+            <keep-alive :max="15">
+              <component :is="Component" :key="route.path + ':' + pageKey" />
+            </keep-alive>
+          </router-view>
+        </ErrorBoundary>
       </main>
     </div>
 
@@ -181,10 +183,12 @@ import {
 } from '@element-plus/icons-vue'
 import { modules, findModuleByPath } from './menuConfig'
 import { sysProjects } from '@/mock'
+import ErrorBoundary from '@/components/ErrorBoundary.vue'
 
 const route = useRoute()
 const router = useRouter()
 const welcomeVisible = ref(false)
+const pageKey = ref(0)
 const currentProject = ref('default')
 const projects = ref([{ id: 'default', name: '默认项目' }, ...sysProjects.slice(0, 4).map(p => ({ id: p.code, name: p.name }))])
 
