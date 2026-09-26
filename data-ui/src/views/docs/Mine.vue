@@ -138,20 +138,16 @@ const currentUser = owners[0]
 
 const docTypes = ['Word', 'Excel', 'PPT', 'PDF', 'Markdown', '思维笔记']
 
-const folderTree = [
-  {
-    id: 'all', name: '全部文档', count: myDocs.value?.length || 0,
-    children: [
-      { id: '操作手册', name: '操作手册', count: 0 },
-      { id: '实施方案', name: '实施方案', count: 0 },
-      { id: '规范制度', name: '规范制度', count: 0 },
-      { id: '培训资料', name: '培训资料', count: 0 },
-      { id: '会议纪要', name: '会议纪要', count: 0 }
-    ]
-  }
-]
-
 const myDocs = computed(() => documents.filter(d => d.owner === currentUser))
+
+const folderTree = computed(() => [
+  {
+    id: 'all', name: '全部文档', count: myDocs.value.length,
+    children: ['操作手册', '实施方案', '规范制度', '培训资料', '会议纪要'].map(f => ({
+      id: f, name: f, count: myDocs.value.filter(d => d.folder === f).length
+    }))
+  }
+])
 
 const filteredData = computed(() =>
   myDocs.value.filter(d =>
