@@ -1,0 +1,115 @@
+server:
+  address: 0.0.0.0
+  port: 8803
+
+spring:
+  application:
+    name: data-integration-service
+  config:
+    import: optional:nacos:data-integration-service.yml
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.81.104:9030/?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+    username: root
+    password: root
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  data:
+    redis:
+      host: 192.168.81.104
+      port: 6379
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.81.104:8848
+        username: nacos
+        password: nacos
+      config:
+        server-addr: 192.168.81.104:8848
+        username: nacos
+        password: nacos
+        file-extension: yml
+
+# Doris Multi-Catalog 配置
+doris:
+  catalog:
+    fe-host: 192.168.81.104
+    fe-query-port: 9030
+    username: root
+    password: root
+    hive:
+      name: hive_catalog
+      metastore-uris: thrift://192.168.81.104:9083
+      hdfs-uri: hdfs://192.168.81.104:8020
+    hudi:
+      name: hudi_catalog
+      metastore-uris: thrift://192.168.81.104:9083
+      hdfs-uri: hdfs://192.168.81.104:8020
+    iceberg:
+      name: iceberg_catalog
+      catalog-type: hive
+      warehouse: hdfs://192.168.81.104:8020/warehouse/iceberg
+    mysql:
+      name: mysql_catalog
+      host: 192.168.81.104
+      port: 3306
+      username: root
+      password: ""
+    # OceanBase 国产数据库
+    oceanbase:
+      name: oceanbase_catalog
+      host: 192.168.81.104
+      port: 2883
+      username: root
+      password: ""
+      database: test
+    # GBase 8s 国产数据库
+    gbase:
+      name: gbase_catalog
+      host: 192.168.81.104
+      port: 5258
+      username: gbasedbt
+      password: ""
+      database: testdb
+      server-name: gbase01
+    # 达梦 DM 国产数据库
+    dameng:
+      name: dameng_catalog
+      host: 192.168.81.104
+      port: 5236
+      username: SYSDBA
+      password: ""
+      database: DAMENG
+    # 人大金仓 KingbaseES 国产数据库
+    kingbase:
+      name: kingbase_catalog
+      host: 192.168.81.104
+      port: 54321
+      username: system
+      password: ""
+      database: test
+
+# DolphinScheduler 调度配置
+dolphinscheduler:
+  api-url: http://192.168.81.104:12345/dolphinscheduler/api
+  token: default_token
+  project-code: 1
+  default-worker-group: default
+  default-tenant: default
+
+# Persist application logs for local troubleshooting
+logging:
+  file:
+    name: logs/${spring.application.name}.log
+

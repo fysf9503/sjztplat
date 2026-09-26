@@ -1,0 +1,5 @@
+# 总 Compose 入口：与 docker/compose 下的拆分文件保持一致
+include:
+  - compose/docker-compose.core.yml
+  - compose/docker-compose.scheduler.yml
+  - compose/docker-compose.metadata.yml

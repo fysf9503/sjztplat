@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doris
+  namespace: data-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: doris
+  template:
+    metadata:
+      labels:
+        app: doris
+    spec:
+      containers:
+        - name: doris
+          image: apache/doris:all-in-one-4.1.3-full
+          ports:
+            - name: fe-http
+              containerPort: 8030
+            - name: mysql
+              containerPort: 9030
+            - name: be-http
+              containerPort: 8040
+            - name: heartbeat
+              containerPort: 9050
+            - name: be-web
+              containerPort: 8060
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+            - name: FE_SERVERS
+              value: "fe1:doris-fe:9010"
+            - name: FE_ID
+              value: "1"
+            - name: BE_ADDR
+              value: "doris-fe:9050"
+          volumeMounts:
+            - name: doris-fe-meta
+              mountPath: /opt/apache-doris/fe/doris-meta
+            - name: doris-fe-log
+              mountPath: /opt/apache-doris/fe/log
+            - name: doris-be-storage
+              mountPath: /opt/apache-doris/be/storage
+            - name: doris-be-log
+              mountPath: /opt/apache-doris/be/log
+      volumes:
+        - name: doris-fe-meta
+          persistentVolumeClaim:
+            claimName: doris-fe-meta-pvc
+        - name: doris-fe-log
+          persistentVolumeClaim:
+            claimName: doris-fe-log-pvc
+        - name: doris-be-storage
+          persistentVolumeClaim:
+            claimName: doris-be-storage-pvc
+        - name: doris-be-log
+          persistentVolumeClaim:
+            claimName: doris-be-log-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doris-fe
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  selector:
+    app: doris
+  ports:
+    - name: fe-http
+      port: 8030
+      targetPort: 8030
+    - name: mysql
+      port: 9030
+      targetPort: 9030
+    - name: be-http
+      port: 8040
+      targetPort: 8040
+    - name: heartbeat
+      port: 9050
+      targetPort: 9050
+    - name: be-web
+      port: 8060
+      targetPort: 8060
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: doris-fe-meta-pvc
+  namespace: data-platform
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: doris-fe-log-pvc
+  namespace: data-platform
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: doris-be-storage-pvc
+  namespace: data-platform
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 30Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: doris-be-log-pvc
+  namespace: data-platform
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi

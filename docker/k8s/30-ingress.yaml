@@ -1,0 +1,62 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: data-platform-ingress
+  namespace: data-platform
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: data-platform.local
+      http:
+        paths:
+          # API 网关（主入口）
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: data-gateway
+                port:
+                  number: 8601
+          - path: /actuator
+            pathType: Prefix
+            backend:
+              service:
+                name: data-gateway
+                port:
+                  number: 8601
+          # DolphinScheduler Web UI
+          - path: /dolphinscheduler
+            pathType: Prefix
+            backend:
+              service:
+                name: dolphinscheduler
+                port:
+                  number: 12345
+          # OpenMetadata Web UI
+          - path: /openmetadata
+            pathType: Prefix
+            backend:
+              service:
+                name: openmetadata
+                port:
+                  number: 8586
+          # Doris FE Web UI
+          - path: /doris
+            pathType: Prefix
+            backend:
+              service:
+                name: doris-fe
+                port:
+                  number: 8030
+          # Nacos Console
+          - path: /nacos
+            pathType: Prefix
+            backend:
+              service:
+                name: nacos
+                port:
+                  number: 8848

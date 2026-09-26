@@ -1,0 +1,58 @@
+services:
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: nacos
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    environment:
+      MODE: standalone
+      TZ: Asia/Shanghai
+      JVM_XMS: 256m
+      JVM_XMX: 512m
+    volumes:
+      - nacos-logs:/home/nacos/logs
+    networks: [data-platform]
+
+  # Doris All-in-One：同时运行 FE 和 BE，适合单机/开发环境
+  doris:
+    image: apache/doris:all-in-one-4.1.3-full
+    container_name: doris
+    hostname: doris
+    ports:
+      - "8030:8030"
+      - "9030:9030"
+      - "8040:8040"
+      - "9050:9050"
+      - "8060:8060"
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - doris-fe-meta:/opt/apache-doris/fe/doris-meta
+      - doris-fe-log:/opt/apache-doris/fe/log
+      - doris-be-storage:/opt/apache-doris/be/storage
+      - doris-be-log:/opt/apache-doris/be/log
+    networks:
+      - data-platform
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    environment:
+      TZ: Asia/Shanghai
+    ports: ["6379:6379"]
+    volumes: [redis-data:/data]
+    networks: [data-platform]
+
+volumes:
+  nacos-logs:
+  doris-fe-meta:
+  doris-fe-log:
+  doris-be-storage:
+  doris-be-log:
+  redis-data:
+
+networks:
+  data-platform:
+    name: data-platform
+    driver: bridge

@@ -1,0 +1,86 @@
+server:
+  port: 8601
+
+spring:
+  main:
+    web-application-type: reactive
+  application:
+    name: data-gateway
+  config:
+    import: optional:nacos:data-gateway.yml
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: data-auth
+          uri: lb://data-auth
+          predicates:
+            - Path=/auth/**
+        - id: system-service
+          uri: lb://system-service
+          predicates:
+            - Path=/system/**
+          filters:
+            - StripPrefix=1
+        - id: data-quality-service
+          uri: lb://data-quality-service
+          predicates:
+            - Path=/quality/**
+        - id: data-realtime-service
+          uri: lb://data-realtime-service
+          predicates:
+            - Path=/realtime/**
+        - id: data-integration-service
+          uri: lb://data-integration-service
+          predicates:
+            - Path=/integration/**
+        - id: data-governance-service
+          uri: lb://data-governance-service
+          predicates:
+            - Path=/governance/**
+        - id: data-lineage-service
+          uri: lb://data-lineage-service
+          predicates:
+            - Path=/lineage/**
+        - id: system-service-dev
+          uri: lb://system-service
+          predicates:
+            - Path=/dev/**
+        - id: system-service-schedule
+          uri: lb://system-service
+          predicates:
+            - Path=/schedule/**
+    nacos:
+      discovery:
+        server-addr: 192.168.81.104:8848
+        namespace: public
+        username: nacos
+        password: nacos
+      config:
+        server-addr: 192.168.81.104:8848
+        file-extension: yml
+        username: nacos
+        password: nacos
+
+# JWT 鉴权配置（与 data-auth 使用相同的密钥）
+jwt:
+  secret: data-platform-secret-key-must-be-at-least-32-characters-long
+
+# 网关白名单路径（不需要 JWT 的接口）
+gateway:
+  white-list:
+    - /auth/login
+    - /auth/register
+    - /actuator/**
+    - /doc.html
+    - /webjars/**
+    - /v3/api-docs/**
+
+# Persist application logs for local troubleshooting
+logging:
+  file:
+    name: logs/${spring.application.name}.log
+

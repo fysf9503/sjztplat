@@ -1,0 +1,117 @@
+services:
+  postgres-om:
+    image: postgres:15-alpine
+    container_name: postgres-om
+    ports: ["5432:5432"]
+    environment:
+      TZ: Asia/Shanghai
+      POSTGRES_USER: openmetadata
+      POSTGRES_PASSWORD: openmetadata_pass
+      POSTGRES_DB: openmetadata_db
+    volumes: [postgres-om-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openmetadata -d openmetadata_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [data-platform]
+
+  elasticsearch-om:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch-om
+    hostname: elasticsearch-om
+    ports: ["9200:9200"]
+    environment:
+      TZ: Asia/Shanghai
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms256m -Xmx256m"
+    volumes: [es-om-data:/usr/share/elasticsearch/data]
+    networks: [data-platform]
+
+  openmetadata:
+    image: openmetadata/server:1.4.0
+    container_name: openmetadata
+    hostname: openmetadata
+    depends_on:
+      openmetadata-migrate:
+        condition: service_completed_successfully
+      elasticsearch-om:
+        condition: service_started
+    ports:
+      - "8585:8585"
+      - "8586:8586"
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_HOST: openmetadata
+      # OpenMetadata 1.4 PostgreSQL connection settings
+      DB_DRIVER_CLASS: org.postgresql.Driver
+      DB_SCHEME: postgresql
+      DB_USE_SSL: "false"
+      DB_HOST: postgres-om
+      DB_PORT: "5432"
+      DB_USER: openmetadata
+      DB_USER_PASSWORD: openmetadata_pass
+      OM_DATABASE_NAME: openmetadata_db
+      # Compatibility aliases used by older OpenMetadata startup scripts
+      DATABASE_TYPE: postgresql
+      DATABASE_HOST: postgres-om
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: openmetadata_db
+      DATABASE_USER: openmetadata
+      DATABASE_PASSWORD: openmetadata_pass
+      DB_PASSWORD: openmetadata_pass
+      ELASTICSEARCH_HOST: elasticsearch-om
+      ELASTICSEARCH_PORT: "9200"
+      ELASTICSEARCH_SCHEME: http
+    volumes: [om-logs:/opt/openmetadata/logs]
+    networks: [data-platform]
+
+  # 首次启动时初始化 OpenMetadata 数据库表结构和 Flyway 版本
+  openmetadata-migrate:
+    image: openmetadata/server:1.4.0
+    container_name: openmetadata-migrate
+    depends_on:
+      postgres-om:
+        condition: service_healthy
+      elasticsearch-om:
+        condition: service_started
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_HOST: openmetadata
+      DB_DRIVER_CLASS: org.postgresql.Driver
+      DB_SCHEME: postgresql
+      DB_USE_SSL: "false"
+      DB_HOST: postgres-om
+      DB_PORT: "5432"
+      DB_USER: openmetadata
+      DB_USER_PASSWORD: openmetadata_pass
+      OM_DATABASE_NAME: openmetadata_db
+      DATABASE_TYPE: postgresql
+      DATABASE_HOST: postgres-om
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: openmetadata_db
+      DATABASE_USER: openmetadata
+      DATABASE_PASSWORD: openmetadata_pass
+      DB_PASSWORD: openmetadata_pass
+      ELASTICSEARCH_HOST: elasticsearch-om
+      ELASTICSEARCH_PORT: "9200"
+      ELASTICSEARCH_SCHEME: http
+    working_dir: /opt/openmetadata
+    # 清空镜像默认入口点，避免出现 /bin/bash /bin/bash 的重复调用
+    entrypoint: []
+    command:
+      - /bin/bash
+      - -lc
+      - exec /opt/openmetadata/bootstrap/bootstrap_storage.sh migrate-all
+    networks: [data-platform]
+
+volumes:
+  postgres-om-data:
+  es-om-data:
+  om-logs:
+
+networks:
+  data-platform:
+    name: data-platform
+    driver: bridge

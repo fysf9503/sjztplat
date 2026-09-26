@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.platform</groupId>
+        <artifactId>data-platform-pro</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>data-modules</artifactId>
+    <packaging>pom</packaging>
+    <name>data-modules</name>
+
+    <modules>
+        <module>system-service</module>
+        <module>data-quality-service</module>
+        <module>data-realtime-service</module>
+        <module>data-integration-service</module>
+        <module>data-governance-service</module>
+        <module>data-lineage-service</module>
+    </modules>
+</project>

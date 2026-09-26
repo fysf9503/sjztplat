@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-om
+  namespace: data-platform
+  labels:
+    app: postgres-om
+spec:
+  serviceName: postgres-om
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-om
+  template:
+    metadata:
+      labels:
+        app: postgres-om
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: postgres-om-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: postgres-om-password
+            - name: POSTGRES_DB
+              value: openmetadata_db
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-om
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+  selector:
+    app: postgres-om
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch-om
+  namespace: data-platform
+  labels:
+    app: elasticsearch-om
+spec:
+  serviceName: elasticsearch-om
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch-om
+  template:
+    metadata:
+      labels:
+        app: elasticsearch-om
+    spec:
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+          ports:
+            - containerPort: 9200
+              name: http
+            - containerPort: 9300
+              name: transport
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: xpack.security.enabled
+              value: "false"
+            - name: ES_JAVA_OPTS
+              value: "-Xms256m -Xmx256m"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: es-data
+              mountPath: /usr/share/elasticsearch/data
+  volumeClaimTemplates:
+    - metadata:
+        name: es-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch-om
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9200
+      name: http
+    - port: 9300
+      name: transport
+  selector:
+    app: elasticsearch-om

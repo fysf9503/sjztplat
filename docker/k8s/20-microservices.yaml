@@ -1,0 +1,457 @@
+# ==================== data-gateway (唯一对外暴露) ====================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-gateway
+  namespace: data-platform
+  labels:
+    app: data-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: data-gateway
+  template:
+    metadata:
+      labels:
+        app: data-gateway
+    spec:
+      containers:
+        - name: data-gateway
+          image: data-platform/data-gateway:1.0.0
+          ports:
+            - containerPort: 8601
+          env:
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0"
+            - name: SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8601
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8601
+            initialDelaySeconds: 30
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-gateway
+  namespace: data-platform
+spec:
+  type: NodePort
+  ports:
+    - port: 8601
+      targetPort: 8601
+      nodePort: 30601
+  selector:
+    app: data-gateway
+---
+# ==================== data-auth ====================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-auth
+  namespace: data-platform
+  labels:
+    app: data-auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-auth
+  template:
+    metadata:
+      labels:
+        app: data-auth
+    spec:
+      containers:
+        - name: data-auth
+          image: data-platform/data-auth:1.0.0
+          ports:
+            - containerPort: 8603
+          env:
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0"
+            - name: SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://doris-fe:9030/data_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-auth
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8603
+  selector:
+    app: data-auth
+---
+# ==================== system-service ====================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: system-service
+  namespace: data-platform
+  labels:
+    app: system-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: system-service
+  template:
+    metadata:
+      labels:
+        app: system-service
+    spec:
+      containers:
+        - name: system-service
+          image: data-platform/system-service:1.0.0
+          ports:
+            - containerPort: 8800
+          env:
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0"
+            - name: SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://doris-fe:9030/data_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+            - name: DOLPHINSCHEDULER_API_URL
+              value: http://dolphinscheduler:12345/dolphinscheduler/api
+            - name: DOLPHINSCHEDULER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: ds-token
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: system-service
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8800
+  selector:
+    app: system-service
+---
+# ==================== data-quality-service ====================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-quality-service
+  namespace: data-platform
+  labels:
+    app: data-quality-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-quality-service
+  template:
+    metadata:
+      labels:
+        app: data-quality-service
+    spec:
+      containers:
+        - name: data-quality-service
+          image: data-platform/data-quality-service:1.0.0
+          ports:
+            - containerPort: 8801
+          env:
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0"
+            - name: SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://doris-fe:9030/data_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-quality-service
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8801
+  selector:
+    app: data-quality-service
+---
+# ==================== data-realtime-service ====================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-realtime-service
+  namespace: data-platform
+  labels:
+    app: data-realtime-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-realtime-service
+  template:
+    metadata:
+      labels:
+        app: data-realtime-service
+    spec:
+      containers:
+        - name: data-realtime-service
+          image: data-platform/data-realtime-service:1.0.0
+          ports:
+            - containerPort: 8802
+          env:
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0"
+            - name: SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://doris-fe:9030/data_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-realtime-service
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8802
+  selector:
+    app: data-realtime-service
+---
+# ==================== data-integration-service ====================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-integration-service
+  namespace: data-platform
+  labels:
+    app: data-integration-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-integration-service
+  template:
+    metadata:
+      labels:
+        app: data-integration-service
+    spec:
+      containers:
+        - name: data-integration-service
+          image: data-platform/data-integration-service:1.0.0
+          ports:
+            - containerPort: 8803
+          env:
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0"
+            - name: SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://doris-fe:9030/data_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-integration-service
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8803
+  selector:
+    app: data-integration-service
+---
+# ==================== data-governance-service ====================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-governance-service
+  namespace: data-platform
+  labels:
+    app: data-governance-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-governance-service
+  template:
+    metadata:
+      labels:
+        app: data-governance-service
+    spec:
+      containers:
+        - name: data-governance-service
+          image: data-platform/data-governance-service:1.0.0
+          ports:
+            - containerPort: 8804
+          env:
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0"
+            - name: SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://doris-fe:9030/data_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-governance-service
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8804
+  selector:
+    app: data-governance-service
+---
+# ==================== data-lineage-service ====================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-lineage-service
+  namespace: data-platform
+  labels:
+    app: data-lineage-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-lineage-service
+  template:
+    metadata:
+      labels:
+        app: data-lineage-service
+    spec:
+      containers:
+        - name: data-lineage-service
+          image: data-platform/data-lineage-service:1.0.0
+          ports:
+            - containerPort: 8805
+          env:
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0"
+            - name: SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR
+              value: nacos:8848
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://doris-fe:9030/data_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+            - name: OPENMETADATA_API_URL
+              value: http://openmetadata:8585/api
+            - name: OPENMETADATA_JWT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: om-jwt-token
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-lineage-service
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8805
+  selector:
+    app: data-lineage-service

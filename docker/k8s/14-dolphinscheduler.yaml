@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dolphinscheduler
+  namespace: data-platform
+  labels:
+    app: dolphinscheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dolphinscheduler
+  template:
+    metadata:
+      labels:
+        app: dolphinscheduler
+    spec:
+      containers:
+        - name: dolphinscheduler
+          image: apache/dolphinscheduler-standalone-server:3.2.1
+          ports:
+            - containerPort: 12345
+              name: api
+              name: web
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+            - name: DS_DB
+              value: h2
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          volumeMounts:
+            - name: ds-logs
+              mountPath: /opt/dolphinscheduler/logs
+            - name: ds-data
+              mountPath: /opt/dolphinscheduler/data
+      volumes:
+        - name: ds-logs
+          persistentVolumeClaim:
+            claimName: ds-logs-pvc
+        - name: ds-data
+          persistentVolumeClaim:
+            claimName: ds-data-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ds-logs-pvc
+  namespace: data-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ds-data-pvc
+  namespace: data-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dolphinscheduler
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 12345
+      name: api
+      name: web
+  selector:
+    app: dolphinscheduler

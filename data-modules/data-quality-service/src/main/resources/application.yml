@@ -1,0 +1,55 @@
+server:
+  address: 0.0.0.0
+  port: 8801
+
+spring:
+  application:
+    name: data-quality-service
+  config:
+    import: optional:nacos:data-quality-service.yml
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.81.104:9030/data_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+    username: root
+    password: root
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  data:
+    redis:
+      host: 192.168.81.104
+      port: 6379
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.81.104:8848
+        username: nacos
+        password: nacos
+      config:
+        server-addr: 192.168.81.104:8848
+        username: nacos
+        password: nacos
+        file-extension: yml
+
+# DolphinScheduler 调度配置
+dolphinscheduler:
+  api-url: http://192.168.81.104:12345/dolphinscheduler/api
+  token: default_token
+  project-code: 1
+  default-worker-group: default
+  default-tenant: default
+
+# Persist application logs for local troubleshooting
+logging:
+  file:
+    name: logs/${spring.application.name}.log
+

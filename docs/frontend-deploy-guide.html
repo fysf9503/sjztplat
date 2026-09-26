@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>前端部署与操作手册 - 数据中台</title>
+<style>
+  :root {
+    --primary: #409eff;
+    --success: #67c23a;
+    --warning: #e6a23c;
+    --danger: #f56c6c;
+    --text: #303133;
+    --text-secondary: #606266;
+    --border: #dcdfe6;
+    --bg: #f5f7fa;
+    --code-bg: #1e1e1e;
+    --code-text: #d4d4d4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "Microsoft YaHei", sans-serif; color: var(--text); line-height: 1.7; background: var(--bg); }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 28px; margin-bottom: 8px; color: var(--text); }
+  h2 { font-size: 22px; margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); color: var(--primary); }
+  h3 { font-size: 18px; margin: 24px 0 8px; color: var(--text); }
+  h4 { font-size: 16px; margin: 16px 0 8px; color: var(--text-secondary); }
+  p { margin-bottom: 12px; color: var(--text-secondary); }
+  .subtitle { color: var(--text-secondary); margin-bottom: 24px; font-size: 14px; }
+  .card { background: #fff; border-radius: 8px; padding: 20px 24px; margin: 16px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .alert { padding: 12px 16px; border-radius: 6px; margin: 12px 0; font-size: 14px; }
+  .alert-warning { background: #fdf6ec; border: 1px solid #f5dab1; color: #e6a23c; }
+  .alert-info { background: #f4f4f5; border: 1px solid #dcdfe6; color: #606266; }
+  .alert-danger { background: #fef0f0; border: 1px solid #fbc4c4; color: #f56c6c; }
+  .alert-success { background: #f0f9eb; border: 1px solid #c2e7b0; color: #67c23a; }
+  code { font-family: "Fira Code", "Consolas", monospace; background: #f0f2f5; padding: 2px 6px; border-radius: 4px; font-size: 13px; color: #c7254e; }
+  pre { background: var(--code-bg); color: var(--code-text); padding: 16px; border-radius: 8px; overflow-x: auto; margin: 12px 0; font-size: 13px; line-height: 1.5; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .code-comment { color: #6a9955; }
+  .code-key { color: #569cd6; }
+  .code-string { color: #ce9178; }
+  .code-number { color: #b5cea8; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th { background: var(--primary); color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+  tr:hover td { background: #f5f7fa; }
+  .step { display: flex; gap: 12px; margin: 12px 0; }
+  .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+  .step-content { flex: 1; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; margin-right: 4px; }
+  .badge-primary { background: #ecf5ff; color: var(--primary); border: 1px solid #b3d8ff; }
+  .badge-success { background: #f0f9eb; color: var(--success); border: 1px solid #c2e7b0; }
+  .badge-warning { background: #fdf6ec; color: var(--warning); border: 1px solid #f5dab1; }
+  .toc { background: #fff; border-radius: 8px; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .toc h3 { margin-top: 0; color: var(--primary); }
+  .toc ul { list-style: none; }
+  .toc li { padding: 4px 0; }
+  .toc a { color: var(--text-secondary); text-decoration: none; font-size: 14px; }
+  .toc a:hover { color: var(--primary); }
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+  .flow-box { padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; }
+  .flow-arrow { color: var(--text-secondary); font-size: 18px; }
+  .flow-1 { background: #ecf5ff; color: var(--primary); border: 1px solid #b3d8ff; }
+  .flow-2 { background: #fdf6ec; color: var(--warning); border: 1px solid #f5dab1; }
+  .flow-3 { background: #f0f9eb; color: var(--success); border: 1px solid #c2e7b0; }
+  .flow-4 { background: #fef0f0; color: var(--danger); border: 1px solid #fbc4c4; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>前端部署与操作手册</h1>
+<p class="subtitle">数据中台 v1.0 — Vue 3 + Vite + Element Plus + Nginx 部署方案</p>
+
+<div class="toc">
+  <h3>目录</h3>
+  <ul>
+    <li><a href="#env">一、环境准备</a></li>
+    <li><a href="#build">二、前端构建</a></li>
+    <li><a href="#nginx">三、Nginx 配置</a></li>
+    <li><a href="#deploy">四、部署步骤</a></li>
+    <li><a href="#login">五、登录与初始化</a></li>
+    <li><a href="#modules">六、功能模块操作手册</a></li>
+    <li><a href="#dev-flow">七、数据开发工作流（重点）</a></li>
+    <li><a href="#faq">八、常见问题</a></li>
+  </ul>
+</div>
+
+<!-- ===== 一、环境准备 ===== -->
+<h2 id="env">一、环境准备</h2>
+<div class="card">
+  <h3>1.1 本地构建环境</h3>
+  <table>
+    <tr><th>组件</th><th>版本要求</th><th>说明</th></tr>
+    <tr><td>Node.js</td><td>v18.18+ / v20+</td><td>Vite 5 要求 Node 18+</td></tr>
+    <tr><td>npm</td><td>v9+ 或 pnpm v8+</td><td>推荐 pnpm</td></tr>
+    <tr><td>Java JDK</td><td>21</td><td>后端构建需要</td></tr>
+    <tr><td>Maven</td><td>3.9+</td><td>后端构建需要</td></tr>
+  </table>
+
+  <h3>1.2 服务器环境</h3>
+  <table>
+    <tr><th>组件</th><th>说明</th></tr>
+    <tr><td>Nginx</td><td>已安装（用户已有）</td></tr>
+    <tr><td>网关地址</td><td>http://&lt;网关IP&gt;:8601</td></tr>
+  </table>
+
+  <div class="alert alert-info">
+    前端构建在本地完成，产物为静态文件（dist/），上传到服务器 Nginx 即可。后端微服务需要独立部署运行。
+  </div>
+</div>
+
+<!-- ===== 二、前端构建 ===== -->
+<h2 id="build">二、前端构建</h2>
+<div class="card">
+  <h3>2.1 安装依赖</h3>
+<pre><code><span class="code-comment"># 进入前端目录</span>
+cd data-ui
+
+<span class="code-comment"># 安装依赖（推荐 pnpm，也可用 npm）</span>
+npm install
+<span class="code-comment"># 或 pnpm install</span></code></pre>
+
+  <h3>2.2 开发模式调试</h3>
+<pre><code><span class="code-comment"># 启动开发服务器（端口 9528）</span>
+npm run dev</code></pre>
+  <p>开发模式下 Vite 自动代理 API 请求到 <code>http://localhost:8601</code>（网关），无需额外配置。</p>
+
+  <h3>2.3 生产构建</h3>
+<pre><code><span class="code-comment"># 构建生产包，输出到 dist/ 目录</span>
+npm run build</code></pre>
+  <p>构建完成后，<code>dist/</code> 目录包含所有静态文件：</p>
+  <pre><code>dist/
+├── index.html          <span class="code-comment"># 入口 HTML</span>
+├── assets/
+│   ├── index-xxx.js    <span class="code-comment"># 主 JS 包（含 Vue + Element Plus）</span>
+│   ├── index-xxx.css   <span class="code-comment"># 样式文件</span>
+│   └── ...             <span class="code-comment"># 其他 chunk</span>
+└── favicon.ico</code></pre>
+</div>
+
+<!-- ===== 三、Nginx 配置 ===== -->
+<h2 id="nginx">三、Nginx 配置</h2>
+<div class="card">
+  <h3>3.1 Nginx 配置文件</h3>
+  <p>将以下配置写入 Nginx 的 server 块中（通常在 <code>/etc/nginx/conf.d/data-platform.conf</code> 或 <code>/etc/nginx/nginx.conf</code>）：</p>
+
+<pre><code><span class="code-comment"># 数据中台前端 + API 代理</span>
+server {
+    listen       80;
+    server_name  _;  <span class="code-comment"># 替换为你的域名或 IP</span>
+
+    <span class="code-comment"># 前端静态资源</span>
+    root   /usr/share/nginx/html/data-platform;
+    index  index.html;
+
+    <span class="code-comment"># Vue Router History 模式：所有前端路由回退到 index.html</span>
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    <span class="code-comment"># ===== API 代理（全部转发到网关 8601）=====</span>
+
+    <span class="code-comment"># 认证服务</span>
+    location /auth/ {
+        proxy_pass http://<span class="code-string">GATEWAY_IP</span>:8601;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    <span class="code-comment"># 系统管理</span>
+    location /system/ {
+        proxy_pass http://<span class="code-string">GATEWAY_IP</span>:8601;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    <span class="code-comment"># 数据开发</span>
+    location /dev/ {
+        proxy_pass http://<span class="code-string">GATEWAY_IP</span>:8601;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    <span class="code-comment"># 调度管理</span>
+    location /schedule/ {
+        proxy_pass http://<span class="code-string">GATEWAY_IP</span>:8601;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    <span class="code-comment"># 数据质量</span>
+    location /quality/ {
+        proxy_pass http://<span class="code-string">GATEWAY_IP</span>:8601;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    <span class="code-comment"># 实时任务</span>
+    location /realtime/ {
+        proxy_pass http://<span class="code-string">GATEWAY_IP</span>:8601;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    <span class="code-comment"># 数据集成</span>
+    location /integration/ {
+        proxy_pass http://<span class="code-string">GATEWAY_IP</span>:8601;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    <span class="code-comment"># 数据治理</span>
+    location /governance/ {
+        proxy_pass http://<span class="code-string">GATEWAY_IP</span>:8601;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    <span class="code-comment"># 数据血缘</span>
+    location /lineage/ {
+        proxy_pass http://<span class="code-string">GATEWAY_IP</span>:8601;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    <span class="code-comment"># 静态资源缓存</span>
+    location ~* \.(js|css|png|jpg|svg|woff2?)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    <span class="code-comment"># gzip 压缩</span>
+    gzip on;
+    gzip_types text/css application/javascript application/json;
+    gzip_min_length 1024;
+}</code></pre>
+
+  <div class="alert alert-warning">
+    <strong>重要：</strong>将 <code>GATEWAY_IP</code> 替换为你部署网关的服务器 IP 地址。如果 Nginx 和网关在同一台机器上，可以使用 <code>127.0.0.1</code>。
+  </div>
+
+  <h3>3.2 前端文件目录</h3>
+  <p>将 <code>dist/</code> 目录内容上传到服务器 <code>/usr/share/nginx/html/data-platform/</code>：</p>
+<pre><code><span class="code-comment"># 在本地构建后上传</span>
+scp -r dist/* user@server:/usr/share/nginx/html/data-platform/</code></pre>
+</div>
+
+<!-- ===== 四、部署步骤 ===== -->
+<h2 id="deploy">四、部署步骤</h2>
+<div class="card">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>本地构建前端</strong>
+      <pre><code>cd data-ui
+npm install
+npm run build</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>上传静态文件到服务器</strong>
+      <pre><code><span class="code-comment"># 在服务器创建目录</span>
+ssh user@server "mkdir -p /usr/share/nginx/html/data-platform"
+
+<span class="code-comment"># 上传构建产物</span>
+scp -r dist/* user@server:/usr/share/nginx/html/data-platform/</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>配置 Nginx</strong>
+      <p>将上方 3.1 的配置写入 Nginx 配置文件，替换 <code>GATEWAY_IP</code> 为实际网关地址。</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <strong>测试并重载 Nginx</strong>
+      <pre><code><span class="code-comment"># 检查配置语法</span>
+nginx -t
+
+<span class="code-comment"># 重载配置（不中断服务）</span>
+nginx -s reload</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <strong>访问验证</strong>
+      <p>浏览器打开 <code>http://&lt;服务器IP&gt;</code>，应看到数据中台登录页面。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 五、登录与初始化 ===== -->
+<h2 id="login">五、登录与初始化</h2>
+<div class="card">
+  <h3>5.1 默认账号</h3>
+  <table>
+    <tr><th>用户名</th><th>密码</th><th>说明</th></tr>
+    <tr><td>admin</td><td>123456</td><td>超级管理员（生产环境请修改）</td></tr>
+  </table>
+
+  <div class="alert alert-danger">
+    <strong>安全提醒：</strong>生产环境务必修改默认密码！数据库初始 SQL 中密码为占位符，需通过注册接口或直接 SQL 更新。
+  </div>
+
+  <h3>5.2 登录流程</h3>
+  <div class="flow">
+    <div class="flow-box flow-1">打开登录页</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box flow-2">输入用户名/密码</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box flow-3">POST /auth/auth/login</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box flow-4">获取 Token → 跳转仪表盘</div>
+  </div>
+  <p>登录成功后 Token 存储在 <code>localStorage</code>，后续所有 API 请求自动携带 <code>Authorization: Bearer &lt;token&gt;</code> 请求头。</p>
+</div>
+
+<!-- ===== 六、功能模块操作手册 ===== -->
+<h2 id="modules">六、功能模块操作手册</h2>
+<div class="card">
+  <h3>6.1 模块总览</h3>
+  <table>
+    <tr><th>菜单</th><th>路由</th><th>功能说明</th></tr>
+    <tr><td>仪表盘</td><td>/dashboard</td><td>数据中台概览</td></tr>
+    <tr><td>系统管理 > 用户管理</td><td>/system/users</td><td>用户 CRUD</td></tr>
+    <tr><td>系统管理 > 用户组管理</td><td>/system/groups</td><td>用户组与权限</td></tr>
+    <tr><td>数据质量 > 核查规则</td><td>/quality/rules</td><td>质量规则配置</td></tr>
+    <tr><td>数据质量 > 核查报告</td><td>/quality/reports</td><td>核查结果查看</td></tr>
+    <tr><td>实时任务</td><td>/realtime/tasks</td><td>Flink 实时任务管理</td></tr>
+    <tr><td><strong>数据开发 > 开发任务</strong></td><td>/dev/tasks</td><td>创建/管理开发任务</td></tr>
+    <tr><td><strong>数据开发 > 工作流编排</strong></td><td>/dev/workflow</td><td>工作流+依赖管理+发布</td></tr>
+    <tr><td>数据集成 > 数据湖 Catalog</td><td>/integration/catalog</td><td>Catalog 管理</td></tr>
+    <tr><td>数据集成 > 数据抽取</td><td>/integration/extract</td><td>数据抽取任务</td></tr>
+    <tr><td>数据血缘</td><td>/lineage/graph</td><td>血缘图谱可视化</td></tr>
+    <tr><td>表结构管理 > 表结构对比</td><td>/schema/compare</td><td>表结构差异对比</td></tr>
+    <tr><td>表结构管理 > 自动建表</td><td>/schema/auto-ddl</td><td>自动 DDL 生成</td></tr>
+    <tr><td>调度管理</td><td>/schedule/jobs</td><td>Cron 调度配置</td></tr>
+  </table>
+</div>
+
+<!-- ===== 七、数据开发工作流 ===== -->
+<h2 id="dev-flow">七、数据开发工作流（重点）</h2>
+<div class="card">
+  <p>这是本平台的核心功能，完整流程如下：</p>
+
+  <div class="flow">
+    <div class="flow-box flow-1">创建开发任务</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box flow-1">创建工作流</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box flow-2">添加任务到工作流</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box flow-2">自动检测依赖</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box flow-3">确认/手动添加依赖</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box flow-4">发布到 DS</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box flow-4">上线调度</div>
+  </div>
+
+  <h3>步骤 1：创建开发任务（/dev/tasks）</h3>
+  <p>在「数据开发 > 开发任务」页面点击「新建任务」：</p>
+  <ul style="margin-left: 20px; margin-bottom: 12px; color: var(--text-secondary);">
+    <li><strong>任务名称</strong>：如 <code>ods_user_sync</code></li>
+    <li><strong>任务类型</strong>：FLINK / SQL / SHELL / PYTHON / CUSTOM</li>
+    <li><strong>源表</strong>：JSON 数组，如 <code>["external.user_log"]</code>（任务读取的表）</li>
+    <li><strong>目标表</strong>：JSON 数组，如 <code>["ods.user_log"]</code>（任务写入的表）</li>
+    <li><strong>任务参数</strong>：DS taskParams JSON 格式</li>
+  </ul>
+  <div class="alert alert-info">
+    <strong>关键概念：</strong>源表和目标表用于自动依赖推导。任务 A 的源表 ∩ 任务 B 的目标表 ≠ 空集 → A 依赖 B。
+  </div>
+
+  <h3>步骤 2：创建工作流（/dev/workflow）</h3>
+  <p>在「数据开发 > 工作流编排」页面点击「新建工作流」：</p>
+  <ul style="margin-left: 20px; margin-bottom: 12px; color: var(--text-secondary);">
+    <li><strong>名称</strong>：如 <code>数仓ETL流水线</code></li>
+    <li><strong>Cron</strong>：如 <code>0 0 2 * * ?</code>（每天凌晨2点）</li>
+  </ul>
+
+  <h3>步骤 3：添加任务到工作流</h3>
+  <p>选中工作流后，在左侧任务列表点击「添加任务」，从弹窗中搜索并添加已创建的开发任务。</p>
+
+  <h3>步骤 4：自动检测依赖</h3>
+  <p>点击顶部「自动检测依赖」按钮，系统基于表血缘关系自动推导依赖建议：</p>
+  <ul style="margin-left: 20px; margin-bottom: 12px; color: var(--text-secondary);">
+    <li>系统返回建议列表，显示匹配的表名</li>
+    <li><strong>建议仅作参考，不自动保存</strong></li>
+  </ul>
+
+  <h3>步骤 5：确认/手动添加依赖</h3>
+  <p>在下方 Tab 面板操作：</p>
+  <table>
+    <tr><th>Tab</th><th>操作</th><th>说明</th></tr>
+    <tr>
+      <td><span class="badge badge-warning">依赖建议</span></td>
+      <td>勾选要确认的建议 → 点击「确认依赖关系」</td>
+      <td>自动检测结果，需用户确认后生效</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-primary">手动添加</span></td>
+      <td>左侧选中任务 → 搜索前置任务 → 点击「添加为前置」</td>
+      <td>手动指定依赖，可搜索任务名</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-success">当前依赖</span></td>
+      <td>查看所有已配置的依赖 → 可移除</td>
+      <td>展示当前完整的依赖列表</td>
+    </tr>
+  </table>
+
+  <h3>步骤 6：发布到 DolphinScheduler</h3>
+  <p>点击顶部「发布到DS」按钮：</p>
+  <div class="alert alert-warning">
+    <strong>发布前校验：</strong>所有任务的依赖状态必须为「已确认」或「手动」。「待确认」状态的任务会被拒绝发布。
+  </div>
+  <p>发布后系统自动构建 DS <code>taskDefinitionJson</code> + <code>taskRelationJson</code>，调用 DS API 创建完整 DAG 工作流。</p>
+
+  <h3>步骤 7：上线调度</h3>
+  <p>发布成功后，点击「上线」按钮，系统创建 DS 调度（Cron 表达式）并上线。DS 将按 Cron 自动执行 DAG。</p>
+
+  <h3>DAG 可视化</h3>
+  <p>页面中间区域展示 ECharts DAG 图，节点为任务，带箭头的边为依赖关系。不同任务类型用不同颜色区分。</p>
+</div>
+
+<!-- ===== 八、常见问题 ===== -->
+<h2 id="faq">八、常见问题</h2>
+<div class="card">
+  <h3>Q1: 页面空白 / 404</h3>
+  <p>检查 Nginx <code>try_files</code> 配置是否正确，确保 SPA History 模式路由回退到 <code>index.html</code>。</p>
+
+  <h3>Q2: API 请求 502 / 504</h3>
+  <p>检查：</p>
+  <ul style="margin-left: 20px; color: var(--text-secondary);">
+    <li>网关服务（8601 端口）是否已启动</li>
+    <li>Nginx 的 <code>proxy_pass</code> 地址是否正确</li>
+    <li>防火墙是否放行 8601 端口</li>
+  </ul>
+
+  <h3>Q3: 登录提示「请求失败」</h3>
+  <p>检查 <code>/auth/</code> 代理是否正确指向网关。登录接口为 <code>POST /auth/auth/login</code>。</p>
+
+  <h3>Q4: 数据开发功能无法使用</h3>
+  <p>确保网关已添加 <code>/dev/**</code> 和 <code>/schedule/**</code> 路由，且 system-service 已注册到 Nacos。</p>
+
+  <h3>Q5: 更新前端版本</h3>
+<pre><code><span class="code-comment"># 本地重新构建</span>
+cd data-ui && npm run build
+
+<span class="code-comment"># 上传覆盖</span>
+scp -r dist/* user@server:/usr/share/nginx/html/data-platform/
+
+<span class="code-comment"># Nginx 无需重启，静态文件直接生效</span></code></pre>
+</div>
+
+</div>
+</body>
+</html>

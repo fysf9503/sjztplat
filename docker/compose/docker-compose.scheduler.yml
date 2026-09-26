@@ -1,0 +1,23 @@
+services:
+  dolphinscheduler:
+    image: apache/dolphinscheduler-standalone-server:3.2.1
+    container_name: dolphinscheduler
+    hostname: dolphinscheduler
+    ports:
+      - "12345:12345"
+    environment:
+      TZ: Asia/Shanghai
+      DS_DB: h2
+    volumes:
+      - ds-logs:/opt/dolphinscheduler/logs
+      - ds-data:/opt/dolphinscheduler/data
+    networks: [data-platform]
+
+volumes:
+  ds-logs:
+  ds-data:
+
+networks:
+  data-platform:
+    name: data-platform
+    driver: bridge

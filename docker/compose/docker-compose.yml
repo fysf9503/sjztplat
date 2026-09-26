@@ -1,0 +1,4 @@
+include:
+  - docker-compose.core.yml
+  - docker-compose.scheduler.yml
+  - docker-compose.metadata.yml

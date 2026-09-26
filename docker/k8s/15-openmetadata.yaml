@@ -1,0 +1,153 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openmetadata
+  namespace: data-platform
+  labels:
+    app: openmetadata
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openmetadata
+  template:
+    metadata:
+      labels:
+        app: openmetadata
+    spec:
+      containers:
+        - name: openmetadata
+          image: openmetadata/server:1.4.0
+          ports:
+            - containerPort: 8585
+              name: api
+            - containerPort: 8586
+              name: web
+          env:
+            - name: SERVER_HOST
+              value: openmetadata
+            - name: TZ
+              value: Asia/Shanghai
+            - name: DB_DRIVER_CLASS
+              value: org.postgresql.Driver
+            - name: DB_SCHEME
+              value: postgresql
+            - name: DB_USE_SSL
+              value: "false"
+            - name: DB_HOST
+              value: postgres-om
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: postgres-om-user
+            - name: DB_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: postgres-om-password
+            - name: OM_DATABASE_NAME
+              value: openmetadata_db
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: postgres-om-password
+            - name: ELASTICSEARCH_HOST
+              value: elasticsearch-om
+            - name: ELASTICSEARCH_PORT
+              value: "9200"
+            - name: ELASTICSEARCH_SCHEME
+              value: http
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          volumeMounts:
+            - name: om-logs
+              mountPath: /opt/openmetadata/logs
+      volumes:
+        - name: om-logs
+          persistentVolumeClaim:
+            claimName: om-logs-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: om-logs-pvc
+  namespace: data-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openmetadata
+  namespace: data-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8585
+      name: api
+    - port: 8586
+      name: web
+  selector:
+    app: openmetadata
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openmetadata-migrate
+  namespace: data-platform
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: openmetadata/server:1.4.0
+          workingDir: /opt/openmetadata
+          command: ["/bin/bash", "-lc"]
+          args:
+            - exec /opt/openmetadata/bootstrap/bootstrap_storage.sh migrate-all
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+            - name: DB_DRIVER_CLASS
+              value: org.postgresql.Driver
+            - name: DB_SCHEME
+              value: postgresql
+            - name: DB_USE_SSL
+              value: "false"
+            - name: DB_HOST
+              value: postgres-om
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: postgres-om-user
+            - name: DB_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: postgres-om-password
+            - name: OM_DATABASE_NAME
+              value: openmetadata_db
+            - name: ELASTICSEARCH_HOST
+              value: elasticsearch-om
+            - name: ELASTICSEARCH_PORT
+              value: "9200"
+            - name: ELASTICSEARCH_SCHEME
+              value: http

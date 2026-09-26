@@ -1,0 +1,17 @@
+# Java
+**/target/
+*.class
+
+# Node / Vite
+**/node_modules/
+data-ui/dist/
+
+# Local IDE and runtime state
+.idea/
+logs/
+outputs/
+*.log
+
+# Local operating-system files
+.DS_Store
+Thumbs.db

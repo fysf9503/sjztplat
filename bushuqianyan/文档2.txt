@@ -1,0 +1,126 @@
+AI 智能数据中台：架构与部署说明
+
+1. 项目结构
+
+data-platform-pro/
+├── data-ui/                         Vue 3 + Vite 前端
+├── data-gateway/                    Spring Cloud Gateway，统一 API 入口
+├── data-auth/                       JWT 登录与认证服务
+├── data-common/                     公共模块
+│   ├── data-common-core/            返回对象、基础实体和通用工具
+│   ├── data-common-jpa/             JPA、Druid 和 Doris JDBC 支持
+│   ├── data-common-ds/              DolphinScheduler 客户端封装
+│   ├── data-common-om/              OpenMetadata 客户端封装
+│   ├── data-common-redis/           Redis 配置
+│   └── data-common-security/        服务侧安全配置
+├── data-modules/
+│   ├── system-service/              用户、用户组、开发任务、工作流、调度配置
+│   ├── data-integration-service/    数据源、Catalog、接入与推送任务
+│   ├── data-quality-service/        质量规则、检测任务、报告与问题明细
+│   ├── data-governance-service/     结构对比、动态抽取与治理能力
+│   ├── data-lineage-service/        血缘上报与 OpenMetadata 集成
+│   └── data-realtime-service/       Stream Load 与实时写入
+├── sql/                             Doris 初始化脚本
+├── docker/compose/                  基础设施、调度和元数据服务编排
+└── docs/                            接口、部署和集成说明
+
+2. 服务关系
+
+浏览器
+  │
+  ├─ data-ui :9528
+  │      │
+  │      └─ data-gateway :8601
+  │             ├─ data-auth :8603
+  │             └─ 业务微服务 :8800 - :8805
+  │
+  ├─ Nacos :8848              服务注册与配置
+  ├─ Doris FE :9030           分析数据、任务结果和业务表
+  ├─ Redis :6379              缓存
+  ├─ DolphinScheduler :12345  工作流调度与实例日志
+  └─ OpenMetadata :8585       资产目录、术语和血缘
+
+3. 技术约束
+
+- 后端使用 Java 21、Spring Boot 3.2、Spring Cloud、Spring Data JPA 和 Druid。
+- 前端使用 Vue 3、Vite、Element Plus、ECharts。
+- Gateway 使用 Spring Cloud LoadBalancer 解析 lb:// 服务路由。
+- Nacos 中服务名必须与网关路由和 spring.application.name 保持一致。
+- Doris 使用单机时，建表应使用 UNIQUE KEY 或 DUPLICATE KEY 模型，并设置 replication_num=1。
+- 任务调度只由 DolphinScheduler 执行，平台不再以 XXL-Job 作为调度实现。
+- 资产、术语、标签和血缘以 OpenMetadata 为权威来源；平台仅保存关联标识和业务配置。
+
+4. 配置原则
+
+4.1 控制面与数据面
+
+控制面保存数据源、任务、依赖、质量规则、运行记录和权限等业务元数据。数据面保存接入后的业务数据、质量结果与查询结果。
+
+- 控制面应使用适合事务写入的关系数据库。
+- Doris 用于分析数据、宽表、统计结果和大批量质量明细。
+- 数据源密码须加密存储；接口返回时必须脱敏。
+
+4.2 数据源
+
+数据源配置至少包含：名称、类型、JDBC URL、用户名、密码、默认库、连接参数、负责人和状态。
+
+连接测试必须在保存前执行，测试结果需要记录测试时间、状态与错误信息。创建接入任务时只能选择已通过测试且状态启用的数据源。
+
+4.3 任务依赖
+
+每个任务可声明多个前置任务。平台保存依赖图后同步为 DolphinScheduler 工作流；循环依赖必须在保存时阻止。
+
+5. 启动顺序
+
+1) 启动基础设施
+
+cd docker/compose
+docker compose -f docker-compose.core.yml up -d
+docker compose -f docker-compose.scheduler.yml up -d
+docker compose -f docker-compose.metadata.yml up -d
+
+2) 初始化 Doris
+
+mysql -h 192.168.81.104 -P 9030 -u root -proot < sql/doris_ddl.sql
+
+3) 启动后端服务
+
+1. data-auth
+2. system-service
+3. data-integration-service
+4. data-quality-service
+5. data-governance-service
+6. data-lineage-service
+7. data-realtime-service
+8. data-gateway
+
+启动后在 Nacos 控制台确认所有实例为 healthy=true。
+
+4) 启动前端
+
+cd data-ui
+npm install
+npm run dev
+
+默认访问地址为 http://localhost:9528。
+
+6. 运行排查
+
+- 401：前端未携带 JWT，或令牌已失效。
+- 503：Gateway 未发现目标服务；检查 Nacos 服务名、健康状态和 LoadBalancer 依赖。
+- 500：请求已进入后端；查看对应服务 logs/<service-name>.log。
+- 请求参数异常：Controller 的 @RequestParam 和 @PathVariable 必须显式声明 value，例如 @RequestParam(value = "pageNum")。
+- 访问数据源失败：检查 JDBC URL、网络端口、账号密码和驱动。
+
+7. 日志位置
+
+各服务启动后在项目根目录 logs/ 下生成：
+
+- data-gateway.log
+- data-auth.log
+- system-service.log
+- data-integration-service.log
+- data-quality-service.log
+- data-governance-service.log
+- data-lineage-service.log
+- data-realtime-service.log
