@@ -115,7 +115,7 @@ const statusTagType = (s) => ({
 }[s] || 'info')
 
 // 实验趋势图
-  const trendOption = computed(() => {
+const trendOption = computed(() => {
   const days = trendRange.value === '7d' ? 7 : trendRange.value === '30d' ? 30 : 90
   const labels = Array.from({ length: days }, (_, i) => {
     const d = new Date()

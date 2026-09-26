@@ -6,7 +6,7 @@
 
     <!-- 统计卡片 -->
     <div class="dp-stat-grid dp-stat-grid-4">
-      <StatCard label="空间总数" :value="spaces.length" unit="个" icon="OfficeBuilding" color="#165dff" bg="#e8f3ff" :trend="3" />
+      <StatCard label="空间总数" :value="spaceList.length" unit="个" icon="OfficeBuilding" color="#165dff" bg="#e8f3ff" :trend="3" />
       <StatCard label="我管理的" :value="myManagedCount" unit="个" icon="Setting" color="#00b42a" bg="#e8ffea" />
       <StatCard label="文档总数" :value="totalDocs" unit="份" icon="Document" color="#ff7d00" bg="#fff3e8" :trend="8" />
       <StatCard label="成员总数" :value="totalMembers" unit="人" icon="User" color="#722ed1" bg="#f5e8ff" />
